@@ -1,22 +1,81 @@
 "use client"
 
-import { use, useState } from "react"
+import { use, useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Download, Save } from "lucide-react"
-import { projects, systemPrompt } from "@/lib/data"
+import { Download, Save, Loader2 } from "lucide-react"
+import { useProject, useProjectConfig, useUpdateProjectConfig } from "@/hooks/use-projects"
 import { toast } from "sonner"
 
 export default function ConfigPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const project = projects.find((p) => p.id === id)
-  const [editingPrompt, setEditingPrompt] = useState(false)
+  const { data: project, isLoading: projectLoading } = useProject(id)
+  const { data: config, isLoading: configLoading, error } = useProjectConfig(id)
+  const updateConfig = useUpdateProjectConfig(id)
 
-  if (!project) return <div className="text-foreground">Project not found</div>
+  const [editingPrompt, setEditingPrompt] = useState(false)
+  const [formData, setFormData] = useState({
+    agentName: "",
+    agentType: "",
+    primaryGoal: "",
+    tonePersonality: "",
+    mustNeverDo: "",
+    systemPrompt: ""
+  })
+
+  useEffect(() => {
+    if (config) {
+      setFormData({
+        agentName: config.agentName || "",
+        agentType: config.agentType || "",
+        primaryGoal: config.primaryGoal || "",
+        tonePersonality: config.tonePersonality || "",
+        mustNeverDo: config.mustNeverDo || "",
+        systemPrompt: config.systemPrompt || ""
+      })
+    }
+  }, [config])
+
+  const handleSaveDetails = async () => {
+    await updateConfig.mutateAsync({
+      agentName: formData.agentName,
+      agentType: formData.agentType,
+      primaryGoal: formData.primaryGoal,
+      tonePersonality: formData.tonePersonality,
+      mustNeverDo: formData.mustNeverDo
+    })
+  }
+
+  const handleSavePrompt = async () => {
+    await updateConfig.mutateAsync({
+      systemPrompt: formData.systemPrompt
+    })
+    setEditingPrompt(false)
+  }
+
+  if (projectLoading || configLoading) {
+    return (
+      <div className="mx-auto flex max-w-6xl items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (error || !config) {
+    return (
+      <div className="mx-auto max-w-6xl">
+        <Card className="border-destructive">
+          <CardContent className="pt-6">
+            <p className="text-sm text-destructive">Failed to load configuration. Please try again.</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -33,43 +92,67 @@ export default function ConfigPage({ params }: { params: Promise<{ id: string }>
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs text-muted-foreground">Agent Name</Label>
-              <Input defaultValue="TechRecruit AI" className="bg-secondary" />
+              <Input
+                value={formData.agentName}
+                onChange={(e) => setFormData({ ...formData, agentName: e.target.value })}
+                className="bg-secondary"
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs text-muted-foreground">Agent Type</Label>
-              <Input defaultValue="Technical Recruiter" className="bg-secondary" />
+              <Input
+                value={formData.agentType}
+                onChange={(e) => setFormData({ ...formData, agentType: e.target.value })}
+                className="bg-secondary"
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs text-muted-foreground">Primary Goal</Label>
               <Textarea
-                defaultValue="Qualify candidates for software engineering roles, gather experience details, and schedule a follow-up interview"
+                value={formData.primaryGoal}
+                onChange={(e) => setFormData({ ...formData, primaryGoal: e.target.value })}
                 className="min-h-20 bg-secondary"
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs text-muted-foreground">{"Tone & Personality"}</Label>
               <Textarea
-                defaultValue="Professional, warm, and encouraging. Sounds like a senior HR professional."
+                value={formData.tonePersonality}
+                onChange={(e) => setFormData({ ...formData, tonePersonality: e.target.value })}
                 className="min-h-16 bg-secondary"
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs text-muted-foreground">Must Never Do</Label>
               <Textarea
-                defaultValue="Never make promises about salary. Never confirm a candidate is selected. Never discuss competitor companies."
+                value={formData.mustNeverDo}
+                onChange={(e) => setFormData({ ...formData, mustNeverDo: e.target.value })}
                 className="min-h-20 bg-secondary"
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs text-muted-foreground">VAPI Assistant ID</Label>
-              <Input defaultValue={project.vapiAssistantId} className="bg-secondary font-mono text-xs" readOnly />
+              <Input
+                value={project?.vapiAssistantId || "Not connected"}
+                className="bg-secondary font-mono text-xs"
+                readOnly
+              />
             </div>
             <div className="flex gap-2">
-              <Button onClick={() => toast.info("This is a demo — sign up to use the real thing")} className="gap-2">
+              <Button
+                onClick={handleSaveDetails}
+                disabled={updateConfig.isPending}
+                className="gap-2"
+              >
+                {updateConfig.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 <Save className="h-4 w-4" />
                 Save Changes
               </Button>
-              <Button variant="outline" onClick={() => toast.info("This is a demo — sign up to use the real thing")} className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => toast.info("VAPI sync will be implemented in Phase 6")}
+                className="gap-2"
+              >
                 <Download className="h-4 w-4" />
                 Pull latest from VAPI
               </Button>
@@ -81,22 +164,30 @@ export default function ConfigPage({ params }: { params: Promise<{ id: string }>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-sm font-medium text-foreground">Current System Prompt</CardTitle>
-              <Badge variant="secondary" className="mt-1.5 text-xs">v4 — last updated 3 days ago</Badge>
+              <Badge variant="secondary" className="mt-1.5 text-xs">
+                {config.version} — {new Date(config.createdAt).toLocaleDateString()}
+              </Badge>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
-                setEditingPrompt(!editingPrompt)
-                if (editingPrompt) toast.info("This is a demo — sign up to use the real thing")
+                if (editingPrompt) {
+                  handleSavePrompt()
+                } else {
+                  setEditingPrompt(true)
+                }
               }}
+              disabled={updateConfig.isPending}
             >
+              {updateConfig.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingPrompt ? "Save Prompt" : "Edit Prompt"}
             </Button>
           </CardHeader>
           <CardContent>
             <Textarea
-              defaultValue={systemPrompt}
+              value={formData.systemPrompt}
+              onChange={(e) => setFormData({ ...formData, systemPrompt: e.target.value })}
               readOnly={!editingPrompt}
               className={`min-h-[480px] bg-secondary font-mono text-xs leading-relaxed ${!editingPrompt ? "cursor-default" : ""}`}
             />
