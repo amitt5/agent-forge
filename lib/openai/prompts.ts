@@ -1,0 +1,166 @@
+import type { AgentConfig } from '@/types'
+
+// Persona Generation Prompts
+export function getPersonaGenerationSystemPrompt(): string {
+  return `You are an expert at creating diverse, realistic caller personas for testing voice agents.
+
+Your task is to generate a variety of personas that will comprehensively test the voice agent's capabilities.
+
+Key principles:
+- Create personas across different difficulty levels (Easy, Medium, Hard)
+- Easy: cooperative, straightforward, no objections
+- Medium: some questions, minor concerns, needs light persuasion
+- Hard: skeptical, many objections, difficult to convince, edge cases
+- Each persona should feel like a real person with authentic motivations
+- Vary demographics, communication styles, and goals
+- Include both ideal customers and challenging cases
+- Add relevant tags that describe their archetype`
+}
+
+export function getPersonaGenerationUserPrompt(agentConfig: AgentConfig, count: number = 3): string {
+  return `Generate ${count} diverse caller personas for testing this voice agent:
+
+Agent Name: ${agentConfig.agentName}
+Agent Type: ${agentConfig.agentType || 'Not specified'}
+Primary Goal: ${agentConfig.primaryGoal || 'Not specified'}
+
+Create a mix of difficulty levels to thoroughly test the agent's capabilities.`
+}
+
+// Scenario Generation Prompts
+export function getScenarioGenerationSystemPrompt(): string {
+  return `You are an expert at creating realistic test scenarios for voice agent testing.
+
+Your task is to generate specific, testable scenarios that explore different conversation paths and edge cases.
+
+Key principles:
+- Each scenario should have a clear, measurable goal
+- Define what the caller wants to achieve
+- Specify the expected successful outcome
+- Scenarios should align with the persona's difficulty level
+- Include both happy path and challenging situations
+- Cover edge cases and potential failure modes
+- Make scenarios specific enough to guide script generation`
+}
+
+export function getScenarioGenerationUserPrompt(
+  agentConfig: AgentConfig,
+  personaName: string,
+  personaDescription: string,
+  personaDifficulty: string,
+  count: number = 3
+): string {
+  return `Generate ${count} test scenarios for this persona calling the voice agent:
+
+Agent Details:
+- Name: ${agentConfig.agentName}
+- Type: ${agentConfig.agentType || 'Not specified'}
+- Primary Goal: ${agentConfig.primaryGoal || 'Not specified'}
+
+Persona:
+- Name: ${personaName}
+- Description: ${personaDescription}
+- Difficulty: ${personaDifficulty}
+
+Create scenarios that match this persona's difficulty level and test different aspects of the agent's capabilities.`
+}
+
+// Script Generation Prompts
+export function getScriptGenerationSystemPrompt(): string {
+  return `You are an expert at writing realistic conversation scripts for voice agent testing.
+
+Your task is to create a natural, realistic back-and-forth conversation between a caller and a voice agent.
+
+Key principles:
+- Write dialogue that sounds natural and authentic
+- The caller should speak like a real person with their personality traits
+- The agent should follow its system prompt and guidelines
+- Include realistic pauses, clarifications, and natural conversation flow
+- The conversation should progress toward the scenario goal
+- Show how the agent handles objections and questions
+- Keep turns concise (1-3 sentences each)
+- Aim for 8-12 total turns (4-6 exchanges)
+- End with a clear outcome related to the expected result`
+}
+
+export function getScriptGenerationUserPrompt(
+  agentConfig: AgentConfig,
+  personaName: string,
+  personaDescription: string,
+  scenarioGoal: string,
+  expectedOutcome: string
+): string {
+  return `Generate a realistic conversation script for this scenario:
+
+Agent Configuration:
+${agentConfig.systemPrompt}
+
+Persona:
+- Name: ${personaName}
+- Description: ${personaDescription}
+
+Scenario:
+- Goal: ${scenarioGoal}
+- Expected Outcome: ${expectedOutcome}
+
+Create a natural conversation that shows how this specific caller would interact with the agent to achieve (or fail to achieve) the scenario goal.`
+}
+
+// Evaluation Prompts (for Phase 4)
+export function getEvaluationSystemPrompt(): string {
+  return `You are an expert evaluator of voice agent conversations.
+
+Your task is to objectively assess how well a voice agent performed in a conversation.
+
+Evaluation criteria:
+1. Goal Achievement (0-10): Did the agent accomplish its primary objective?
+2. Objection Handling (0-10): How well did the agent address concerns and objections?
+3. Stayed On Script (0-10): Did the agent follow its guidelines and system prompt?
+4. Natural Conversation (0-10): How natural and human-like was the interaction?
+5. Brand Compliance (0-10): Did the agent stay professional and on-brand?
+
+Scoring guide:
+- 0-3: Poor, major issues
+- 4-6: Moderate, needs improvement
+- 7-8: Good, minor issues
+- 9-10: Excellent, professional
+
+Flag any turns where:
+- The agent violated its "must never do" guidelines (error)
+- The agent gave incorrect or concerning information (error)
+- The conversation went off track (warning)
+- The agent could have handled something better (warning)
+
+Final status:
+- Passed: Overall score >= 7.5, no error flags
+- Review: Overall score 5-7.4, or has warning flags
+- Failed: Overall score < 5, or has error flags`
+}
+
+export function getEvaluationUserPrompt(
+  agentConfig: AgentConfig,
+  conversationTranscript: { role: string; text: string }[],
+  scenarioGoal: string,
+  expectedOutcome: string
+): string {
+  const transcript = conversationTranscript
+    .map((turn, i) => `${i + 1}. ${turn.role === 'agent' ? 'Agent' : 'Caller'}: ${turn.text}`)
+    .join('\n')
+
+  return `Evaluate this voice agent conversation:
+
+Agent Guidelines:
+${agentConfig.systemPrompt}
+
+Primary Goal: ${agentConfig.primaryGoal || 'Not specified'}
+Must Never Do: ${agentConfig.mustNeverDo || 'Not specified'}
+
+Test Scenario:
+- Goal: ${scenarioGoal}
+- Expected Outcome: ${expectedOutcome}
+
+Conversation Transcript:
+${transcript}
+
+Provide a detailed evaluation with scores, flagged issues, and an overall assessment.`
+}
