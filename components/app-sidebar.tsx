@@ -16,9 +16,10 @@ import {
   ScrollText,
   Users,
   Zap,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { projects } from "@/lib/data"
+import { useProjects } from "@/hooks/use-projects"
 
 const projectNavItems = [
   { label: "Overview", icon: Zap, href: "" },
@@ -34,9 +35,10 @@ const projectNavItems = [
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const { data: projects, isLoading } = useProjects()
   const projectMatch = pathname.match(/^\/projects\/([^/]+)/)
   const activeProjectId = projectMatch ? projectMatch[1] : null
-  const activeProject = projects.find((p) => p.id === activeProjectId)
+  const activeProject = projects?.find((p) => p.id === activeProjectId)
 
   return (
     <aside className="flex h-full w-60 flex-col border-r border-border bg-card">
@@ -91,21 +93,31 @@ export function AppSidebar() {
             <p className="mb-2 px-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Projects
             </p>
-            <div className="flex flex-col gap-0.5">
-              {projects.map((project) => (
-                <Link
-                  key={project.id}
-                  href={`/projects/${project.id}`}
-                  className="flex items-center justify-between rounded-md px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                >
-                  <span className="flex items-center gap-2.5">
-                    <FolderOpen className="h-4 w-4" />
-                    {project.name}
-                  </span>
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </Link>
-              ))}
-            </div>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : projects && projects.length > 0 ? (
+              <div className="flex flex-col gap-0.5">
+                {projects.map((project) => (
+                  <Link
+                    key={project.id}
+                    href={`/projects/${project.id}`}
+                    className="flex items-center justify-between rounded-md px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <FolderOpen className="h-4 w-4" />
+                      {project.name}
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="px-2 py-4 text-center">
+                <p className="text-xs text-muted-foreground">No projects yet</p>
+              </div>
+            )}
           </>
         )}
       </nav>
