@@ -29,7 +29,7 @@ export default function PersonasPage({ params }: { params: Promise<{ id: string 
   const pendingPersonas = personas?.filter(p => !p.approved) || []
 
   const handleGenerate = async () => {
-    await generatePersonas.mutateAsync({ count: 3 })
+    await generatePersonas.mutateAsync({ count: 5 })
   }
 
   const handleApprove = async (personaId: string) => {

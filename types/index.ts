@@ -25,6 +25,7 @@ export interface AgentConfig {
   primaryGoal: string | null
   tonePersonality: string | null
   mustNeverDo: string | null
+  targetGroup: string | null
   systemPrompt: string
   isCurrent: boolean
   createdAt: string
@@ -34,6 +35,9 @@ export interface Persona {
   id: string
   projectId: string
   name: string
+  age: number | null
+  gender: string | null
+  profession: string | null
   description: string
   difficulty: 'Easy' | 'Medium' | 'Hard'
   tag: string | null
@@ -199,6 +203,7 @@ export type DbAgentConfig = {
   primary_goal: string | null
   tone_personality: string | null
   must_never_do: string | null
+  target_group: string | null
   system_prompt: string
   is_current: boolean
   created_at: string
@@ -208,6 +213,9 @@ export type DbPersona = {
   id: string
   project_id: string
   name: string
+  age: number | null
+  gender: string | null
+  profession: string | null
   description: string
   difficulty: 'Easy' | 'Medium' | 'Hard'
   tag: string | null

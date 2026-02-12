@@ -69,6 +69,7 @@ export function dbToAgentConfig(db: DbAgentConfig): AgentConfig {
     primaryGoal: db.primary_goal,
     tonePersonality: db.tone_personality,
     mustNeverDo: db.must_never_do,
+    targetGroup: db.target_group,
     systemPrompt: db.system_prompt,
     isCurrent: db.is_current,
     createdAt: db.created_at
@@ -86,6 +87,7 @@ export function agentConfigToDb(config: Partial<AgentConfig>): Partial<DbAgentCo
   if (config.primaryGoal !== undefined) db.primary_goal = config.primaryGoal
   if (config.tonePersonality !== undefined) db.tone_personality = config.tonePersonality
   if (config.mustNeverDo !== undefined) db.must_never_do = config.mustNeverDo
+  if (config.targetGroup !== undefined) db.target_group = config.targetGroup
   if (config.systemPrompt !== undefined) db.system_prompt = config.systemPrompt
   if (config.isCurrent !== undefined) db.is_current = config.isCurrent
 
@@ -98,6 +100,9 @@ export function dbToPersona(db: DbPersona): Persona {
     id: db.id,
     projectId: db.project_id,
     name: db.name,
+    age: db.age,
+    gender: db.gender,
+    profession: db.profession,
     description: db.description,
     difficulty: db.difficulty,
     tag: db.tag,
@@ -113,6 +118,9 @@ export function personaToDb(persona: Partial<Persona>): Partial<DbPersona> {
   if (persona.id !== undefined) db.id = persona.id
   if (persona.projectId !== undefined) db.project_id = persona.projectId
   if (persona.name !== undefined) db.name = persona.name
+  if (persona.age !== undefined) db.age = persona.age
+  if (persona.gender !== undefined) db.gender = persona.gender
+  if (persona.profession !== undefined) db.profession = persona.profession
   if (persona.description !== undefined) db.description = persona.description
   if (persona.difficulty !== undefined) db.difficulty = persona.difficulty
   if (persona.tag !== undefined) db.tag = persona.tag

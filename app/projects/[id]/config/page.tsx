@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Download, Save, Loader2 } from "lucide-react"
-import { useProject, useProjectConfig, useUpdateProjectConfig } from "@/hooks/use-projects"
+import { Download, Save, Loader2, Sparkles } from "lucide-react"
+import { useProject, useProjectConfig, useUpdateProjectConfig, useUpdateProject } from "@/hooks/use-projects"
+import { apiClient } from "@/lib/api/client"
 import { toast } from "sonner"
 
 export default function ConfigPage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,14 +19,18 @@ export default function ConfigPage({ params }: { params: Promise<{ id: string }>
   const updateConfig = useUpdateProjectConfig(id)
 
   const [editingPrompt, setEditingPrompt] = useState(false)
+  const [extracting, setExtracting] = useState(false)
+  const [vapiAssistantId, setVapiAssistantId] = useState("")
   const [formData, setFormData] = useState({
     agentName: "",
     agentType: "",
     primaryGoal: "",
     tonePersonality: "",
     mustNeverDo: "",
+    targetGroup: "",
     systemPrompt: ""
   })
+  const updateProject = useUpdateProject(id)
 
   useEffect(() => {
     if (config) {
@@ -35,10 +40,14 @@ export default function ConfigPage({ params }: { params: Promise<{ id: string }>
         primaryGoal: config.primaryGoal || "",
         tonePersonality: config.tonePersonality || "",
         mustNeverDo: config.mustNeverDo || "",
+        targetGroup: config.targetGroup || "",
         systemPrompt: config.systemPrompt || ""
       })
     }
-  }, [config])
+    if (project) {
+      setVapiAssistantId(project.vapiAssistantId || "")
+    }
+  }, [config, project])
 
   const handleSaveDetails = async () => {
     await updateConfig.mutateAsync({
@@ -46,7 +55,8 @@ export default function ConfigPage({ params }: { params: Promise<{ id: string }>
       agentType: formData.agentType,
       primaryGoal: formData.primaryGoal,
       tonePersonality: formData.tonePersonality,
-      mustNeverDo: formData.mustNeverDo
+      mustNeverDo: formData.mustNeverDo,
+      targetGroup: formData.targetGroup
     })
   }
 
@@ -55,6 +65,42 @@ export default function ConfigPage({ params }: { params: Promise<{ id: string }>
       systemPrompt: formData.systemPrompt
     })
     setEditingPrompt(false)
+  }
+
+  const handleAutoFill = async () => {
+    if (!formData.systemPrompt) {
+      toast.error("Please paste your system prompt first")
+      return
+    }
+
+    setExtracting(true)
+    try {
+      const result = await apiClient.post<any>(`/projects/${id}/config/extract`, {
+        systemPrompt: formData.systemPrompt
+      })
+
+      setFormData({
+        ...formData,
+        agentName: result.agentName,
+        agentType: result.agentType,
+        primaryGoal: result.primaryGoal,
+        tonePersonality: result.tonePersonality,
+        mustNeverDo: result.mustNeverDo,
+        targetGroup: result.targetGroup
+      })
+
+      toast.success("Agent details auto-filled! Review and save.")
+    } catch (error) {
+      toast.error("Failed to auto-fill. Please fill manually.")
+    } finally {
+      setExtracting(false)
+    }
+  }
+
+  const handleSaveVapiId = async () => {
+    await updateProject.mutateAsync({
+      vapiAssistantId: vapiAssistantId || null
+    })
   }
 
   if (projectLoading || configLoading) {
@@ -86,8 +132,27 @@ export default function ConfigPage({ params }: { params: Promise<{ id: string }>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="bg-card">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-medium text-foreground">Agent Details</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAutoFill}
+              disabled={extracting || !formData.systemPrompt}
+              className="gap-2"
+            >
+              {extracting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  AI Auto-Fill
+                </>
+              )}
+            </Button>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
@@ -131,11 +196,22 @@ export default function ConfigPage({ params }: { params: Promise<{ id: string }>
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-muted-foreground">VAPI Assistant ID</Label>
+              <Label className="text-xs text-muted-foreground">Target Group</Label>
+              <Textarea
+                value={formData.targetGroup}
+                onChange={(e) => setFormData({ ...formData, targetGroup: e.target.value })}
+                placeholder="e.g., Small business owners aged 30-50 looking for accounting software..."
+                className="min-h-20 bg-secondary"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs text-muted-foreground">VAPI Assistant ID (Optional)</Label>
               <Input
-                value={project?.vapiAssistantId || "Not connected"}
+                value={vapiAssistantId}
+                onChange={(e) => setVapiAssistantId(e.target.value)}
+                onBlur={handleSaveVapiId}
+                placeholder="Enter your VAPI assistant ID"
                 className="bg-secondary font-mono text-xs"
-                readOnly
               />
             </div>
             <div className="flex gap-2">

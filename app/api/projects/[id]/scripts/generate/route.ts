@@ -4,10 +4,10 @@ import { handleApiError, notFound, badRequest } from '@/lib/api-error'
 import { dbToAgentConfig, dbToPersona, dbToScenario, dbToTestScript } from '@/lib/db-transforms'
 import { generateWithStructure } from '@/lib/openai/client'
 import {
-  getScriptGenerationSystemPrompt,
-  getScriptGenerationUserPrompt
+  getDiscussionGuideGenerationSystemPrompt,
+  getDiscussionGuideGenerationUserPrompt
 } from '@/lib/openai/prompts'
-import { scriptJsonSchema, type ScriptResponse } from '@/lib/openai/schemas'
+import { discussionGuideJsonSchema, type DiscussionGuideResponse } from '@/lib/openai/schemas'
 import type { AgentConfig, DbAgentConfig, Persona, DbPersona, Scenario, DbScenario, TestScript, DbTestScript, ApiResponse } from '@/types'
 import { nanoid } from 'nanoid'
 
@@ -66,33 +66,34 @@ export async function POST(
 
     const persona = dbToPersona(personaData as DbPersona)
 
-    // Generate script using OpenAI
-    const systemPrompt = getScriptGenerationSystemPrompt()
-    const userPrompt = getScriptGenerationUserPrompt(
+    // Generate discussion guide using OpenAI
+    const systemPrompt = getDiscussionGuideGenerationSystemPrompt()
+    const userPrompt = getDiscussionGuideGenerationUserPrompt(
       agentConfig,
       persona.name,
       persona.description,
+      persona.difficulty,
       scenario.goal,
       scenario.expectedOutcome
     )
 
-    const result = await generateWithStructure<ScriptResponse>(
+    const result = await generateWithStructure<DiscussionGuideResponse>(
       systemPrompt,
       userPrompt,
-      scriptJsonSchema,
+      discussionGuideJsonSchema,
       { temperature: 0.7 }
     )
 
-    // Insert generated script into database
+    // Insert generated discussion guide into database
     const scriptToInsert: Partial<DbTestScript> = {
       id: nanoid(10),
       project_id: projectId,
       scenario_id: scenarioId,
-      name: result.script.name,
-      turns: result.script.turns,
+      name: result.guide.name,
+      turns: 0, // Discussion guides don't have predetermined turns
       status: 'Pending',
       ai_generated: true,
-      script_data: result.script.scriptData
+      script_data: result.guide as any // Store the discussion guide structure
     }
 
     const { data, error } = await supabaseAdmin

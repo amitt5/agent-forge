@@ -65,7 +65,7 @@ export default function TestRunsPage({ params }: { params: Promise<{ id: string 
     setModalOpen(false)
     await executeTestRun.mutateAsync({
       scriptIds: selectedScriptIds,
-      useVapi: false // Set to true when VAPI key is available
+      useVapi: true // Use real VAPI
     })
     setSelectedScriptIds([])
   }

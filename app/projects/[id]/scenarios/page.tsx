@@ -72,8 +72,21 @@ export default function ScenariosPage({ params }: { params: Promise<{ id: string
     }
   }
 
-  const getPersonaName = (personaId: string) => {
-    return personas?.find(p => p.id === personaId)?.name || "Unknown"
+  const formatPersonaDisplay = (persona: any) => {
+    const parts = [persona.name]
+    if (persona.age && persona.gender) {
+      parts.push(`${persona.age}${persona.gender}`)
+    }
+    if (persona.profession) {
+      parts.push(persona.profession)
+    }
+    return parts.join(', ')
+  }
+
+  const getPersonaDisplay = (personaId: string) => {
+    const persona = personas?.find(p => p.id === personaId)
+    if (!persona) return "Unknown"
+    return formatPersonaDisplay(persona)
   }
 
   if (scenariosLoading || personasLoading) {
@@ -107,7 +120,7 @@ export default function ScenariosPage({ params }: { params: Promise<{ id: string
             <SelectContent>
               {approvedPersonas.map((persona) => (
                 <SelectItem key={persona.id} value={persona.id}>
-                  {persona.name}
+                  {formatPersonaDisplay(persona)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -165,7 +178,7 @@ export default function ScenariosPage({ params }: { params: Promise<{ id: string
                 {scenarios?.map((scenario) => (
                   <TableRow key={scenario.id} className={`border-border ${scenario.status === "Pending" ? "opacity-60" : ""}`}>
                     <TableCell className="text-sm font-medium text-foreground">{scenario.name}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{getPersonaName(scenario.personaId)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{getPersonaDisplay(scenario.personaId)}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={getDifficultyColor(scenario.difficulty)}>{scenario.difficulty}</Badge>
                     </TableCell>

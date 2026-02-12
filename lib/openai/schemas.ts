@@ -3,6 +3,9 @@ import { z } from 'zod'
 // Persona Generation Schema
 export const PersonaSchema = z.object({
   name: z.string(),
+  age: z.number(),
+  gender: z.string(),
+  profession: z.string(),
   description: z.string(),
   difficulty: z.enum(['Easy', 'Medium', 'Hard']),
   tag: z.string()
@@ -25,11 +28,14 @@ export const personasJsonSchema = {
         type: 'object',
         properties: {
           name: { type: 'string' },
+          age: { type: 'number' },
+          gender: { type: 'string' },
+          profession: { type: 'string' },
           description: { type: 'string' },
           difficulty: { type: 'string', enum: ['Easy', 'Medium', 'Hard'] },
           tag: { type: 'string' }
         },
-        required: ['name', 'description', 'difficulty', 'tag'],
+        required: ['name', 'age', 'gender', 'profession', 'description', 'difficulty', 'tag'],
         additionalProperties: false
       }
     }
@@ -75,51 +81,48 @@ export const scenariosJsonSchema = {
   additionalProperties: false
 }
 
-// Script Generation Schema
-export const ScriptTurnSchema = z.object({
-  role: z.enum(['agent', 'caller']),
-  text: z.string()
-})
-
-export const ScriptSchema = z.object({
+// Discussion Guide Generation Schema
+export const DiscussionGuideSchema = z.object({
   name: z.string(),
-  turns: z.number(),
-  scriptData: z.array(ScriptTurnSchema)
+  objective: z.string(),
+  steps: z.array(z.string()),
+  behaviors: z.array(z.string()),
+  successCriteria: z.array(z.string())
 })
 
-export const ScriptResponseSchema = z.object({
-  script: ScriptSchema
+export const DiscussionGuideResponseSchema = z.object({
+  guide: DiscussionGuideSchema
 })
 
-export type ScriptGenerated = z.infer<typeof ScriptSchema>
-export type ScriptResponse = z.infer<typeof ScriptResponseSchema>
+export type DiscussionGuideGenerated = z.infer<typeof DiscussionGuideSchema>
+export type DiscussionGuideResponse = z.infer<typeof DiscussionGuideResponseSchema>
 
-export const scriptJsonSchema = {
+export const discussionGuideJsonSchema = {
   type: 'object',
   properties: {
-    script: {
+    guide: {
       type: 'object',
       properties: {
         name: { type: 'string' },
-        turns: { type: 'number' },
-        scriptData: {
+        objective: { type: 'string' },
+        steps: {
           type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              role: { type: 'string', enum: ['agent', 'caller'] },
-              text: { type: 'string' }
-            },
-            required: ['role', 'text'],
-            additionalProperties: false
-          }
+          items: { type: 'string' }
+        },
+        behaviors: {
+          type: 'array',
+          items: { type: 'string' }
+        },
+        successCriteria: {
+          type: 'array',
+          items: { type: 'string' }
         }
       },
-      required: ['name', 'turns', 'scriptData'],
+      required: ['name', 'objective', 'steps', 'behaviors', 'successCriteria'],
       additionalProperties: false
     }
   },
-  required: ['script'],
+  required: ['guide'],
   additionalProperties: false
 }
 

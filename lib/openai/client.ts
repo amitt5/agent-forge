@@ -29,7 +29,7 @@ export async function generateWithStructure<T>(
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      const completion = await openai.beta.chat.completions.parse({
+      const completion = await openai.chat.completions.create({
         model,
         temperature,
         messages: [
@@ -46,11 +46,12 @@ export async function generateWithStructure<T>(
         }
       })
 
-      const parsed = completion.choices[0].message.parsed
-      if (!parsed) {
-        throw new Error('Failed to parse OpenAI response')
+      const content = completion.choices[0].message.content
+      if (!content) {
+        throw new Error('Failed to get OpenAI response')
       }
 
+      const parsed = JSON.parse(content)
       return parsed as T
     } catch (error) {
       lastError = error as Error

@@ -37,7 +37,7 @@ export async function POST(
 
     // Generate personas using OpenAI
     const systemPrompt = getPersonaGenerationSystemPrompt()
-    const userPrompt = getPersonaGenerationUserPrompt(agentConfig, count)
+    const userPrompt = getPersonaGenerationUserPrompt(agentConfig, count, agentConfig.targetGroup || undefined)
 
     const result = await generateWithStructure<PersonasResponse>(
       systemPrompt,
@@ -51,6 +51,9 @@ export async function POST(
       id: nanoid(10),
       project_id: projectId,
       name: p.name,
+      age: p.age,
+      gender: p.gender,
+      profession: p.profession,
       description: p.description,
       difficulty: p.difficulty,
       tag: p.tag,

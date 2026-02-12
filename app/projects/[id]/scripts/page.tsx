@@ -245,32 +245,80 @@ export default function ScriptsPage({ params }: { params: Promise<{ id: string }
       <Sheet open={viewOpen} onOpenChange={setViewOpen}>
         <SheetContent className="w-full border-border bg-card sm:max-w-lg">
           <SheetHeader className="mb-4">
-            <SheetTitle className="text-foreground">{selectedScript?.name || "Script"}</SheetTitle>
+            <SheetTitle className="text-foreground">{selectedScript?.name || "Discussion Guide"}</SheetTitle>
             <SheetDescription>
-              {selectedScript && `${getScenarioName(selectedScript.scenarioId)} - ${getPersonaName(selectedScript.scenarioId)} - ${selectedScript.turns} turns`}
+              {selectedScript && `${getScenarioName(selectedScript.scenarioId)} - ${getPersonaName(selectedScript.scenarioId)}`}
             </SheetDescription>
           </SheetHeader>
           <ScrollArea className="h-[calc(100vh-120px)] pr-4">
-            <div className="flex flex-col gap-3 pb-8">
-              {selectedScript?.scriptData.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex ${msg.role === "agent" ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[85%] rounded-lg px-3.5 py-2.5 text-sm ${
-                      msg.role === "agent"
-                        ? "bg-primary/15 text-foreground"
-                        : "bg-secondary text-foreground"
-                    }`}
-                  >
-                    <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                      {msg.role === "agent" ? "Agent" : "Caller"}
-                    </p>
-                    {msg.text}
-                  </div>
-                </div>
-              ))}
+            <div className="flex flex-col gap-6 pb-8">
+              {selectedScript?.scriptData && typeof selectedScript.scriptData === 'object' && !Array.isArray(selectedScript.scriptData) ? (
+                <>
+                  {/* Discussion Guide Format */}
+                  {selectedScript.scriptData.objective && (
+                    <div>
+                      <h3 className="mb-2 text-sm font-semibold text-foreground">Objective</h3>
+                      <p className="text-sm text-muted-foreground">{selectedScript.scriptData.objective}</p>
+                    </div>
+                  )}
+
+                  {selectedScript.scriptData.steps && selectedScript.scriptData.steps.length > 0 && (
+                    <div>
+                      <h3 className="mb-2 text-sm font-semibold text-foreground">Steps to Cover</h3>
+                      <ol className="list-decimal space-y-2 pl-5">
+                        {selectedScript.scriptData.steps.map((step: string, i: number) => (
+                          <li key={i} className="text-sm text-muted-foreground">{step}</li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+
+                  {selectedScript.scriptData.behaviors && selectedScript.scriptData.behaviors.length > 0 && (
+                    <div>
+                      <h3 className="mb-2 text-sm font-semibold text-foreground">Behavioral Guidelines</h3>
+                      <ul className="list-disc space-y-2 pl-5">
+                        {selectedScript.scriptData.behaviors.map((behavior: string, i: number) => (
+                          <li key={i} className="text-sm text-muted-foreground">{behavior}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {selectedScript.scriptData.successCriteria && selectedScript.scriptData.successCriteria.length > 0 && (
+                    <div>
+                      <h3 className="mb-2 text-sm font-semibold text-foreground">Success Criteria</h3>
+                      <ul className="list-disc space-y-2 pl-5">
+                        {selectedScript.scriptData.successCriteria.map((criteria: string, i: number) => (
+                          <li key={i} className="text-sm text-muted-foreground">{criteria}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {/* Legacy Script Format (array of turns) */}
+                  {Array.isArray(selectedScript?.scriptData) && selectedScript.scriptData.map((msg: any, i: number) => (
+                    <div
+                      key={i}
+                      className={`flex ${msg.role === "agent" ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[85%] rounded-lg px-3.5 py-2.5 text-sm ${
+                          msg.role === "agent"
+                            ? "bg-primary/15 text-foreground"
+                            : "bg-secondary text-foreground"
+                        }`}
+                      >
+                        <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                          {msg.role === "agent" ? "Agent" : "Caller"}
+                        </p>
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </ScrollArea>
         </SheetContent>
