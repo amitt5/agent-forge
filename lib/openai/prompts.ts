@@ -33,7 +33,42 @@ Agent Type: ${agentConfig.agentType || 'Not specified'}
 Primary Goal: ${agentConfig.primaryGoal || 'Not specified'}
 ${targetGroup ? `\nTarget Group: ${targetGroup}` : ''}
 
-${targetGroup ? 'Base the personas on the target group described above. ' : ''}Create a mix of difficulty levels to thoroughly test the agent's capabilities. Ensure personas represent realistic members of the target audience.`
+${targetGroup ? 'Base the personas on the target group described above. ' : ''}Create a mix of difficulty levels to thoroughly test the agent's capabilities. Ensure personas represent realistic members of the target audience.
+
+IMPORTANT: Only provide basic information (name, age, gender, difficulty, tag). Do NOT include profession or description yet.`
+}
+
+// Persona Description Generation Prompts
+export function getPersonaDescriptionSystemPrompt(): string {
+  return `You are an expert at creating detailed, realistic persona descriptions for voice agent testing.
+
+Your task is to generate a comprehensive description and profession for a caller persona based on their basic information.
+
+The description should include:
+- Detailed personality traits and communication style
+- Motivations and goals related to calling the agent
+- Specific behaviors and objections they might raise
+- Background context that explains their difficulty level
+
+Make the persona feel like a real person with authentic concerns and communication patterns.`
+}
+
+export function getPersonaDescriptionUserPrompt(agentConfig: AgentConfig, basicPersona: any): string {
+  return `Generate a detailed description and profession for this caller persona:
+
+Name: ${basicPersona.name}
+Age: ${basicPersona.age}
+Gender: ${basicPersona.gender}
+Difficulty: ${basicPersona.difficulty}
+Tag: ${basicPersona.tag || 'Not specified'}
+
+Context about the voice agent they'll be calling:
+Agent Name: ${agentConfig.agentName}
+Agent Type: ${agentConfig.agentType || 'Not specified'}
+Primary Goal: ${agentConfig.primaryGoal || 'Not specified'}
+${agentConfig.targetGroup ? `\nTarget Group: ${agentConfig.targetGroup}` : ''}
+
+Create a realistic profession that fits their profile, and write a detailed description (2-3 sentences) that captures their personality, communication style, and why they would be calling this agent. Make sure the description aligns with their difficulty level.`
 }
 
 // Scenario Generation Prompts

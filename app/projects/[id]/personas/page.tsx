@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { usePersonas, useGeneratePersonas, useDeletePersona } from "@/hooks/use-personas"
+import { usePersonas, useDeletePersona } from "@/hooks/use-personas"
 import { apiClient } from "@/lib/api/client"
 import { toast } from "sonner"
 import { useQueryClient } from "@tanstack/react-query"
+import { PersonaEditorModal, type BasicPersona } from "@/components/personas/persona-editor-modal"
 
 function getDifficultyColor(d: string) {
   if (d === "Easy") return "bg-emerald-500/15 text-emerald-500 border-emerald-500/20"
@@ -20,16 +21,64 @@ function getDifficultyColor(d: string) {
 export default function PersonasPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: projectId } = use(params)
   const { data: personas, isLoading } = usePersonas(projectId)
-  const generatePersonas = useGeneratePersonas(projectId)
   const deletePersona = useDeletePersona(projectId)
   const queryClient = useQueryClient()
   const [approvingId, setApprovingId] = useState<string | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [basicPersonas, setBasicPersonas] = useState<BasicPersona[]>([])
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const approvedPersonas = personas?.filter(p => p.approved) || []
   const pendingPersonas = personas?.filter(p => !p.approved) || []
 
   const handleGenerate = async () => {
-    await generatePersonas.mutateAsync({ count: 5 })
+    setIsGenerating(true)
+    try {
+      const response = await apiClient.post<any>(`/projects/${projectId}/personas/generate`, {
+        mode: 'basic'
+      })
+
+      console.log('Frontend received response:', response)
+
+      // apiClient automatically extracts the 'data' field, so response is directly the data
+      if (response?.personas && Array.isArray(response.personas)) {
+        console.log('Setting basic personas:', response.personas)
+        setBasicPersonas(response.personas)
+        setIsModalOpen(true)
+      } else {
+        console.error('Invalid response format:', response)
+        toast.error('Failed to generate personas')
+      }
+    } catch (error: any) {
+      console.error('Error generating personas:', error)
+      toast.error(error.message || 'Failed to generate personas')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleSubmitPersonas = async (editedPersonas: BasicPersona[]) => {
+    setIsSubmitting(true)
+    try {
+      const response = await apiClient.post<any>(`/projects/${projectId}/personas/generate`, {
+        mode: 'full',
+        personas: editedPersonas
+      })
+
+      // apiClient automatically extracts the 'data' field, so response is directly the data (array of personas)
+      if (response && Array.isArray(response)) {
+        queryClient.invalidateQueries({ queryKey: ['projects', projectId, 'personas'] })
+        toast.success(`Generated ${response.length} personas successfully`)
+        setIsModalOpen(false)
+      } else {
+        toast.error('Failed to create personas')
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create personas')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleApprove = async (personaId: string) => {
@@ -85,11 +134,11 @@ export default function PersonasPage({ params }: { params: Promise<{ id: string 
         </div>
         <Button
           onClick={handleGenerate}
-          disabled={generatePersonas.isPending}
+          disabled={isGenerating}
           variant="outline"
           className="gap-2 bg-transparent"
         >
-          {generatePersonas.isPending ? (
+          {isGenerating ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
               Generating...
@@ -107,9 +156,9 @@ export default function PersonasPage({ params }: { params: Promise<{ id: string 
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <p className="mb-4 text-sm text-muted-foreground">No personas yet. Generate some using AI!</p>
-            <Button onClick={handleGenerate} disabled={generatePersonas.isPending} className="gap-2">
+            <Button onClick={handleGenerate} disabled={isGenerating} className="gap-2">
               <Sparkles className="h-4 w-4" />
-              {generatePersonas.isPending ? "Generating..." : "Generate Personas"}
+              {isGenerating ? "Generating..." : "Generate Personas"}
             </Button>
           </CardContent>
         </Card>
@@ -206,7 +255,7 @@ export default function PersonasPage({ params }: { params: Promise<{ id: string 
           ))}
 
           {/* Loading State for Generation */}
-          {generatePersonas.isPending && (
+          {isSubmitting && (
             <>
               {[1, 2, 3].map((i) => (
                 <Card key={`loading-${i}`} className="border-dashed border-border bg-card">
@@ -224,6 +273,15 @@ export default function PersonasPage({ params }: { params: Promise<{ id: string 
           )}
         </div>
       )}
+
+      {/* Persona Editor Modal */}
+      <PersonaEditorModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        initialPersonas={basicPersonas}
+        onSubmit={handleSubmitPersonas}
+        isSubmitting={isSubmitting}
+      />
     </div>
   )
 }

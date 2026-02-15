@@ -1,6 +1,63 @@
 import { z } from 'zod'
 
-// Persona Generation Schema
+// Basic Persona Schema (without description)
+export const BasicPersonaSchema = z.object({
+  name: z.string(),
+  age: z.number(),
+  gender: z.string(),
+  difficulty: z.enum(['Easy', 'Medium', 'Hard']),
+  tag: z.string()
+})
+
+export const BasicPersonasResponseSchema = z.object({
+  personas: z.array(BasicPersonaSchema)
+})
+
+export type BasicPersonaGenerated = z.infer<typeof BasicPersonaSchema>
+export type BasicPersonasResponse = z.infer<typeof BasicPersonasResponseSchema>
+
+export const basicPersonasJsonSchema = {
+  type: 'object',
+  properties: {
+    personas: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          age: { type: 'number' },
+          gender: { type: 'string' },
+          difficulty: { type: 'string', enum: ['Easy', 'Medium', 'Hard'] },
+          tag: { type: 'string' }
+        },
+        required: ['name', 'age', 'gender', 'difficulty', 'tag'],
+        additionalProperties: false
+      }
+    }
+  },
+  required: ['personas'],
+  additionalProperties: false
+}
+
+// Persona Description Schema (for generating description + profession)
+export const PersonaDescriptionResponseSchema = z.object({
+  description: z.string(),
+  profession: z.string()
+})
+
+export type PersonaDescriptionResponse = z.infer<typeof PersonaDescriptionResponseSchema>
+
+export const personaDescriptionJsonSchema = {
+  type: 'object',
+  properties: {
+    description: { type: 'string' },
+    profession: { type: 'string' }
+  },
+  required: ['description', 'profession'],
+  additionalProperties: false
+}
+
+// Full Persona Generation Schema (legacy, for backwards compatibility)
 export const PersonaSchema = z.object({
   name: z.string(),
   age: z.number(),

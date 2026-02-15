@@ -32,6 +32,7 @@ class VapiClient {
   async sendMessage(assistantId: string, message: string, previousChatId?: string): Promise<{
     response: string
     chatId: string
+    messages: Array<{ role: string; content: string }>
   }> {
     if (!this.apiKey) {
       throw new Error('VAPI_API_KEY is not set in environment variables')
@@ -70,7 +71,8 @@ class VapiClient {
 
       return {
         response: assistantMessage || 'No response from assistant',
-        chatId: data.id || 'unknown'
+        chatId: data.id || 'unknown',
+        messages: data.messages || []
       }
     } catch (error) {
       console.error('VAPI send message error:', error)
@@ -87,44 +89,32 @@ class VapiClient {
       throw new Error('VAPI_API_KEY is not set in environment variables')
     }
 
-    // For now, we'll use the chat endpoint with the assistant
-    // Build a conversation by continuing the SAME chat using previousChatId
+    // Build a conversation by chaining messages using previousChatId
     try {
-      const turns: Array<{ role: 'assistant' | 'user'; text: string }> = []
-      let firstChatId: string | undefined = undefined
+      let currentChatId: string | undefined = undefined
+      let conversationMessages: Array<{ role: string; content: string }> = []
 
       for (const callerMessage of request.callerMessages) {
-        // Add caller message to turns
-        turns.push({
-          role: 'user',
-          text: callerMessage
-        })
-
         // Send to VAPI and get assistant response
-        // Always use the first chat ID to continue the same conversation
+        // Use the most recent chat ID to chain the conversation
         const result = await this.sendMessage(
           request.assistantId || '',
           callerMessage,
-          firstChatId
+          currentChatId
         )
 
-        // Only set firstChatId on the first turn, then keep using it
-        if (!firstChatId) {
-          firstChatId = result.chatId
-        }
+        // Update the chat ID to the most recent one (for chaining)
+        currentChatId = result.chatId
 
-        // Add assistant response to turns
-        turns.push({
-          role: 'assistant',
-          text: result.response
-        })
+        // VAPI returns the full conversation history in messages
+        conversationMessages = result.messages
       }
 
       return {
-        conversationId: firstChatId || `chat-${Date.now()}`,
-        turns: turns.map(t => ({
-          role: t.role,
-          message: t.text
+        conversationId: currentChatId || `chat-${Date.now()}`,
+        turns: conversationMessages.map(msg => ({
+          role: msg.role as 'assistant' | 'user',
+          message: msg.content
         }))
       }
     } catch (error) {

@@ -1,0 +1,63 @@
+{
+    "id": "452217df-cc1a-45c6-bd62-7c46e28c75af",
+    "orgId": "956d5155-869f-4a8f-bed7-617d0243ad29",
+    "previousChatId": "f7c51436-4419-4544-aef6-6db2d58b6909",
+    "input": [
+        {
+            "role": "user",
+            "content": "What was my first question?"
+        }
+    ],
+    "output": [
+        {
+            "role": "assistant",
+            "content": "Your first question was: \"i am curious what services you provide?\"  \n\nLet me know if you'd like more details about any of the services I mentioned, or if you're ready to continue scheduling your appointment."
+        }
+    ],
+    "assistantId": "d199a850-b22f-4af4-80d3-7d7dc41ede15",
+    "messages": [
+        {
+            "role": "user",
+            "content": "hi"
+        },
+        {
+            "role": "assistant",
+            "content": "\"Thank you for calling Wellness Partners. This is Riley, your scheduling assistant. How may I help you today?\""
+        },
+        {
+            "role": "user",
+            "content": "i am curious what services you provide?"
+        },
+        {
+            "role": "assistant",
+            "content": "Great question! Wellness Partners is a multi-specialty health clinic, and we offer a wide range of services, including:\n\n- **Primary Care**: Annual physicals, illness visits, chronic condition management, and follow-ups  \n- **Specialist Consultations**: Cardiology, dermatology, endocrinology, gastroenterology, and more  \n- **Diagnostic Services**: Lab work, imaging, and other testing  \n- **Wellness Services**: Nutrition counseling, physical therapy, and mental health support  \n- **Urgent Care**: Same-day appointments for non-emergency acute issues like minor injuries or sudden illness\n\nIf you're looking for something specific, I’d be happy to help you find the right service or provider. Would you like to schedule an appointment or learn more about a particular area?"
+        },
+        {
+            "role": "user",
+            "content": "I'd like to make an appointment"
+        },
+        {
+            "role": "assistant",
+            "content": "I'd be happy to help you with scheduling. Let me get some information from you so we can find the right appointment.\n\nFirst, what type of appointment are you looking to schedule today? For example, is it a primary care visit, a specialist consultation, or something else?"
+        }
+    ],
+    "createdAt": "2026-02-13T16:01:00.751Z",
+    "updatedAt": "2026-02-13T16:01:00.751Z",
+    "cost": 0.0164,
+    "costs": [
+        {
+            "cost": 0.011405,
+            "type": "model",
+            "model": {
+                "model": "gpt-4o",
+                "provider": "openai"
+            },
+            "promptTokens": 2158,
+            "completionTokens": 41
+        },
+        {
+            "cost": 0.005,
+            "type": "chat"
+        }
+    ]
+}
