@@ -19,10 +19,10 @@ export async function POST(
   try {
     const { id: projectId } = await params
     const body = await request.json()
-    const { scenarioId } = body
+    const { scenario, goal, expectedOutcome } = body
 
-    if (!scenarioId) {
-      throw badRequest('scenarioId is required')
+    if (!scenario || !goal || !expectedOutcome) {
+      throw badRequest('scenario, goal, and expectedOutcome are required')
     }
 
     // Get current agent config
@@ -39,43 +39,22 @@ export async function POST(
 
     const agentConfig = dbToAgentConfig(configData as DbAgentConfig)
 
-    // Get scenario
-    const { data: scenarioData, error: scenarioError } = await supabaseAdmin
-      .from('scenarios')
-      .select('*')
-      .eq('id', scenarioId)
-      .eq('project_id', projectId)
-      .single()
-
-    if (scenarioError || !scenarioData) {
-      throw notFound('Scenario')
-    }
-
-    const scenario = dbToScenario(scenarioData as DbScenario)
-
-    // Get persona
-    const { data: personaData, error: personaError } = await supabaseAdmin
-      .from('personas')
-      .select('*')
-      .eq('id', scenario.personaId)
-      .single()
-
-    if (personaError || !personaData) {
-      throw notFound('Persona')
-    }
-
-    const persona = dbToPersona(personaData as DbPersona)
-
-    // Generate discussion guide using OpenAI
+    // Generate discussion guide using OpenAI (persona-agnostic)
     const systemPrompt = getDiscussionGuideGenerationSystemPrompt()
-    const userPrompt = getDiscussionGuideGenerationUserPrompt(
-      agentConfig,
-      persona.name,
-      persona.description,
-      persona.difficulty,
-      scenario.goal,
-      scenario.expectedOutcome
-    )
+    const userPrompt = `Generate a discussion guide for testing an AI agent.
+
+Agent Configuration:
+- Agent Name: ${agentConfig.agentName}
+- Agent Type: ${agentConfig.agentType || 'General purpose'}
+- Primary Goal: ${agentConfig.primaryGoal || 'Not specified'}
+- Tone: ${agentConfig.tonePersonality || 'Professional'}
+
+Test Case Details:
+- Scenario: ${scenario}
+- Goal: ${goal}
+- Expected Outcome: ${expectedOutcome}
+
+Create a discussion guide that will help test the agent's ability to handle this scenario.`
 
     const result = await generateWithStructure<DiscussionGuideResponse>(
       systemPrompt,
@@ -88,10 +67,12 @@ export async function POST(
     const scriptToInsert: Partial<DbTestScript> = {
       id: nanoid(10),
       project_id: projectId,
-      scenario_id: scenarioId,
-      name: result.guide.name,
+      scenario_id: null, // No longer tied to a scenario
+      name: scenario, // Use the scenario description as the name
+      goal,
+      expected_outcome: expectedOutcome,
       turns: 0, // Discussion guides don't have predetermined turns
-      status: 'Pending',
+      status: 'Approved', // Auto-approve as per requirements
       ai_generated: true,
       script_data: result.guide as any // Store the discussion guide structure
     }

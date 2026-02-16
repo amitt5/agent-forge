@@ -21,19 +21,34 @@ export function useTestScript(projectId: string, scriptId: string) {
   })
 }
 
+// Get suggestions for test case creation
+export function useTestCaseSuggestions(projectId: string) {
+  return useMutation({
+    mutationFn: () =>
+      apiClient.post<{
+        scenario: string
+        goal: string
+        expectedOutcome: string
+      }>(`/projects/${projectId}/scripts/suggestions`, {}),
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to generate suggestions')
+    }
+  })
+}
+
 // Generate test script using AI
 export function useGenerateTestScript(projectId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: { scenarioId: string }) =>
+    mutationFn: (data: { scenario: string; goal: string; expectedOutcome: string }) =>
       apiClient.post<TestScript>(`/projects/${projectId}/scripts/generate`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects', projectId, 'scripts'] })
-      toast.success('Test script generated successfully')
+      toast.success('Test case created successfully')
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to generate test script')
+      toast.error(error.message || 'Failed to create test case')
     }
   })
 }

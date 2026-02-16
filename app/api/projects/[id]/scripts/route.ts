@@ -41,10 +41,10 @@ export async function POST(
     const { id: projectId } = await params
     const body = await request.json()
 
-    const { name, scenarioId, scriptData, status, aiGenerated } = body
+    const { name, goal, expectedOutcome, scriptData, status, aiGenerated, scenarioId } = body
 
-    if (!name || !scenarioId || !scriptData) {
-      throw badRequest('Name, scenarioId, and scriptData are required')
+    if (!name || !goal || !expectedOutcome || !scriptData) {
+      throw badRequest('Name, goal, expectedOutcome, and scriptData are required')
     }
 
     // Verify project exists
@@ -58,28 +58,18 @@ export async function POST(
       throw notFound('Project')
     }
 
-    // Verify scenario exists and belongs to project
-    const { data: scenario, error: scenarioError } = await supabaseAdmin
-      .from('scenarios')
-      .select('id')
-      .eq('id', scenarioId)
-      .eq('project_id', projectId)
-      .single()
-
-    if (scenarioError || !scenario) {
-      throw notFound('Scenario')
-    }
-
     const scriptId = nanoid(10)
-    const turns = scriptData.length
+    const turns = 0 // Discussion guides don't have predetermined turns
 
     const newScript: Partial<DbTestScript> = {
       id: scriptId,
       project_id: projectId,
-      scenario_id: scenarioId,
+      scenario_id: scenarioId || null, // Optional for backward compatibility
       name,
+      goal,
+      expected_outcome: expectedOutcome,
       turns,
-      status: status || 'Pending',
+      status: status || 'Approved', // Default to Approved as per requirements
       ai_generated: aiGenerated || false,
       script_data: scriptData
     }

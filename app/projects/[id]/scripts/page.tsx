@@ -1,7 +1,7 @@
 "use client"
 
 import { use, useState } from "react"
-import { Eye, Sparkles, Loader2, Check, X } from "lucide-react"
+import { Eye, Plus, Loader2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -14,13 +14,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -28,53 +21,21 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { useTestScripts, useGenerateTestScript, useUpdateTestScript, useDeleteTestScript } from "@/hooks/use-scripts"
-import { useScenarios } from "@/hooks/use-scenarios"
-import { usePersonas } from "@/hooks/use-personas"
+import { useTestScripts, useDeleteTestScript } from "@/hooks/use-scripts"
+import { TestCaseCreatorModal } from "@/components/test-cases/test-case-creator-modal"
 import type { TestScript } from "@/types"
-import { apiClient } from "@/lib/api/client"
-import { toast } from "sonner"
-import { useQueryClient } from "@tanstack/react-query"
 
 export default function ScriptsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: projectId } = use(params)
   const { data: scripts, isLoading: scriptsLoading } = useTestScripts(projectId)
-  const { data: scenarios, isLoading: scenariosLoading } = useScenarios(projectId)
-  const { data: personas } = usePersonas(projectId)
-  const generateScript = useGenerateTestScript(projectId)
   const deleteScript = useDeleteTestScript(projectId)
-  const queryClient = useQueryClient()
 
-  const [selectedScenarioId, setSelectedScenarioId] = useState<string>("")
+  const [createModalOpen, setCreateModalOpen] = useState(false)
   const [viewOpen, setViewOpen] = useState(false)
   const [selectedScript, setSelectedScript] = useState<TestScript | null>(null)
-  const [approvingId, setApprovingId] = useState<string | null>(null)
-
-  const approvedScenarios = scenarios?.filter(s => s.status === 'Approved') || []
-
-  const handleGenerate = async () => {
-    if (!selectedScenarioId) {
-      toast.error("Please select a scenario first")
-      return
-    }
-    await generateScript.mutateAsync({ scenarioId: selectedScenarioId })
-  }
-
-  const handleApprove = async (scriptId: string) => {
-    setApprovingId(scriptId)
-    try {
-      await apiClient.patch(`/projects/${projectId}/scripts/${scriptId}`, { status: 'Approved' })
-      queryClient.invalidateQueries({ queryKey: ['projects', projectId, 'scripts'] })
-      toast.success('Script approved successfully')
-    } catch (error) {
-      toast.error('Failed to approve script')
-    } finally {
-      setApprovingId(null)
-    }
-  }
 
   const handleDelete = async (scriptId: string) => {
-    if (confirm("Are you sure you want to delete this script?")) {
+    if (confirm("Are you sure you want to delete this test case?")) {
       await deleteScript.mutateAsync(scriptId)
     }
   }
@@ -84,22 +45,12 @@ export default function ScriptsPage({ params }: { params: Promise<{ id: string }
     setViewOpen(true)
   }
 
-  const getScenarioName = (scenarioId: string) => {
-    return scenarios?.find(s => s.id === scenarioId)?.name || "Unknown"
-  }
-
-  const getPersonaName = (scenarioId: string) => {
-    const scenario = scenarios?.find(s => s.id === scenarioId)
-    if (!scenario) return "Unknown"
-    return personas?.find(p => p.id === scenario.personaId)?.name || "Unknown"
-  }
-
-  if (scriptsLoading || scenariosLoading) {
+  if (scriptsLoading) {
     return (
       <div className="mx-auto max-w-6xl">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-foreground">Test Scripts</h1>
-          <p className="text-sm text-muted-foreground">AI-generated conversation scripts based on your scenarios</p>
+          <h1 className="text-2xl font-semibold text-foreground">Test Cases</h1>
+          <p className="text-sm text-muted-foreground">AI-generated test cases for testing your agent</p>
         </div>
         <Card className="bg-card">
           <CardContent className="py-12 text-center">
@@ -114,54 +65,25 @@ export default function ScriptsPage({ params }: { params: Promise<{ id: string }
     <div className="mx-auto max-w-6xl">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Test Scripts</h1>
-          <p className="text-sm text-muted-foreground">AI-generated conversation scripts based on your scenarios</p>
+          <h1 className="text-2xl font-semibold text-foreground">Test Cases</h1>
+          <p className="text-sm text-muted-foreground">AI-generated test cases for testing your agent</p>
         </div>
-        <div className="flex gap-2">
-          <Select value={selectedScenarioId} onValueChange={setSelectedScenarioId}>
-            <SelectTrigger className="w-64">
-              <SelectValue placeholder="Select scenario" />
-            </SelectTrigger>
-            <SelectContent>
-              {approvedScenarios.map((scenario) => (
-                <SelectItem key={scenario.id} value={scenario.id}>
-                  {scenario.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            className="gap-2 bg-transparent"
-            onClick={handleGenerate}
-            disabled={!selectedScenarioId || generateScript.isPending}
-          >
-            {generateScript.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                AI Generate
-              </>
-            )}
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          className="gap-2 bg-transparent"
+          onClick={() => setCreateModalOpen(true)}
+        >
+          <Plus className="h-4 w-4" />
+          Create Test Case
+        </Button>
       </div>
 
       {scripts && scripts.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <p className="mb-4 text-sm text-muted-foreground">
-              No test scripts yet. First approve some scenarios, then generate scripts!
+              No test cases yet. Click "Create Test Case" to get started!
             </p>
-            {approvedScenarios.length === 0 && (
-              <p className="text-xs text-muted-foreground">
-                (You need approved scenarios first)
-              </p>
-            )}
           </CardContent>
         </Card>
       ) : (
@@ -170,33 +92,25 @@ export default function ScriptsPage({ params }: { params: Promise<{ id: string }
             <Table>
               <TableHeader>
                 <TableRow className="border-border">
-                  <TableHead className="text-muted-foreground">Script Name</TableHead>
                   <TableHead className="text-muted-foreground">Scenario</TableHead>
-                  <TableHead className="text-muted-foreground">Persona</TableHead>
-                  <TableHead className="text-muted-foreground">Turns</TableHead>
-                  <TableHead className="text-muted-foreground">Status</TableHead>
+                  <TableHead className="text-muted-foreground">Goal</TableHead>
+                  <TableHead className="text-muted-foreground">Expected Outcome</TableHead>
                   <TableHead className="text-muted-foreground">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {scripts?.map((script) => (
-                  <TableRow key={script.id} className={`border-border ${script.status === "Pending" ? "opacity-60" : ""}`}>
-                    <TableCell className="text-sm font-medium text-foreground">{script.name}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{getScenarioName(script.scenarioId)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{getPersonaName(script.scenarioId)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{script.turns}</TableCell>
-                    <TableCell>
-                      {script.status === "Approved" ? (
-                        <Badge variant="outline" className="border-emerald-500/20 bg-emerald-500/15 text-emerald-500">Approved</Badge>
-                      ) : (
-                        <Badge variant="outline" className="border-amber-500/20 bg-amber-500/15 text-amber-500">Pending</Badge>
-                      )}
+                  <TableRow key={script.id} className="border-border">
+                    <TableCell className="text-sm font-medium text-foreground max-w-xs">
+                      {script.name}
                       {script.aiGenerated && (
                         <Badge variant="outline" className="ml-2 border-primary/20 bg-primary/10 text-xs text-primary">
                           AI
                         </Badge>
                       )}
                     </TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{script.goal}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{script.expectedOutcome}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
@@ -207,22 +121,6 @@ export default function ScriptsPage({ params }: { params: Promise<{ id: string }
                         >
                           <Eye className="h-3 w-3" /> View
                         </Button>
-                        {script.status === "Pending" && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 gap-1 text-xs"
-                            onClick={() => handleApprove(script.id)}
-                            disabled={approvingId === script.id}
-                          >
-                            {approvingId === script.id ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <Check className="h-3 w-3" />
-                            )}
-                            Approve
-                          </Button>
-                        )}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -245,9 +143,14 @@ export default function ScriptsPage({ params }: { params: Promise<{ id: string }
       <Sheet open={viewOpen} onOpenChange={setViewOpen}>
         <SheetContent className="w-full border-border bg-card sm:max-w-lg">
           <SheetHeader className="mb-4">
-            <SheetTitle className="text-foreground">{selectedScript?.name || "Discussion Guide"}</SheetTitle>
-            <SheetDescription>
-              {selectedScript && `${getScenarioName(selectedScript.scenarioId)} - ${getPersonaName(selectedScript.scenarioId)}`}
+            <SheetTitle className="text-foreground">{selectedScript?.name || "Test Case"}</SheetTitle>
+            <SheetDescription className="space-y-2">
+              <div>
+                <span className="font-medium">Goal:</span> {selectedScript?.goal}
+              </div>
+              <div>
+                <span className="font-medium">Expected Outcome:</span> {selectedScript?.expectedOutcome}
+              </div>
             </SheetDescription>
           </SheetHeader>
           <ScrollArea className="h-[calc(100vh-120px)] pr-4">
@@ -323,6 +226,12 @@ export default function ScriptsPage({ params }: { params: Promise<{ id: string }
           </ScrollArea>
         </SheetContent>
       </Sheet>
+
+      <TestCaseCreatorModal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        projectId={projectId}
+      />
     </div>
   )
 }

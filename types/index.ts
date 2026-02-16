@@ -67,8 +67,10 @@ export interface ScriptTurn {
 export interface TestScript {
   id: string
   projectId: string
-  scenarioId: string
+  scenarioId?: string // Optional for backward compatibility with old test runs
   name: string
+  goal: string
+  expectedOutcome: string
   turns: number
   status: 'Approved' | 'Pending' | 'Archived'
   aiGenerated: boolean
@@ -240,8 +242,10 @@ export type DbScenario = {
 export type DbTestScript = {
   id: string
   project_id: string
-  scenario_id: string
+  scenario_id?: string // Optional for backward compatibility
   name: string
+  goal: string
+  expected_outcome: string
   turns: number
   status: 'Approved' | 'Pending' | 'Archived'
   ai_generated: boolean

@@ -169,6 +169,8 @@ export function dbToTestScript(db: DbTestScript): TestScript {
     projectId: db.project_id,
     scenarioId: db.scenario_id,
     name: db.name,
+    goal: db.goal,
+    expectedOutcome: db.expected_outcome,
     turns: db.turns,
     status: db.status,
     aiGenerated: db.ai_generated,
@@ -184,6 +186,8 @@ export function testScriptToDb(script: Partial<TestScript>): Partial<DbTestScrip
   if (script.projectId !== undefined) db.project_id = script.projectId
   if (script.scenarioId !== undefined) db.scenario_id = script.scenarioId
   if (script.name !== undefined) db.name = script.name
+  if (script.goal !== undefined) db.goal = script.goal
+  if (script.expectedOutcome !== undefined) db.expected_outcome = script.expectedOutcome
   if (script.turns !== undefined) db.turns = script.turns
   if (script.status !== undefined) db.status = script.status
   if (script.aiGenerated !== undefined) db.ai_generated = script.aiGenerated
